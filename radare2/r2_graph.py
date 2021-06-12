@@ -7,11 +7,10 @@ class R2_Graph:
     def __init__(self, bin_path, target_function):
         self.path = bin_path
         self.target_function = target_function
-        self.r2 = r2pipe.open(bin_path)
+        self.r2 = r2pipe.open(bin_path, ["-e bin.cache=true"])
         if not self.r2:
             raise Exception(f"Unable to open {bin_path}")
     
-
     def get_r2(self):
         return self.r2
 
@@ -90,6 +89,5 @@ if __name__ == '__main__':
         g = r2_graph.create_graph(target_function=fcn)
         if r2_graph.is_equal(g):
             print(f"Function {hex(fcn)} has the same block graph structure!")
-
 
 

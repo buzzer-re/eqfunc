@@ -1,10 +1,33 @@
 #!/usr/bin/python3
-import r2pipe
 import sys, json
 import networkx as nx
+import psutil
 
-INSIDE_NO_FILE = 1
-OUTSIDE = 2
+me = psutil.Process()
+parent = psutil.Process(me.ppid())
+calle = parent.cmdline()[0]
+
+rizin = False
+
+inside_r2 = False
+inside_rz = False
+
+if 'rizin' ==  calle or 'cutter' == calle:
+    import rzpipe as pipe
+    inside_rz = True
+    rizin = True
+elif 'radare2' == calle or 'r2' == calle:
+    import r2pipe as pipe 
+    inside_r2 = True
+else:
+    try:
+        import rzpipe as pipe
+        rizin = True
+    except:
+        try:
+            import r2pipe as pipe
+        except Exception as e:
+            raise e
 
 class R2_Graph:
     '''
@@ -21,7 +44,7 @@ class R2_Graph:
         self.path = bin_path
         self.target_function = target_function
         if r2 is None:
-            self.r2 = r2pipe.open(bin_path, ["-e bin.cache=true"])                    
+            self.r2 = pipe.open(bin_path, ["-e bin.cache=true" if not rizin else "-e io.cache=true"])                    
             if not self.r2:
                 raise Exception(f"Unable to open {bin_path}")
         else:
@@ -64,28 +87,32 @@ class R2_Graph:
             print(msg)
             return
 
+
+        # Map all address to numbers between 0-nuBlocks
+        # because the node number can't be unique 
         for i, k in enumerate(tmp_graph[0]['blocks']):
             offset  = k['offset']
             mapping[offset]  = i
             graph.add_node(i)
         
+        # Now connect each node in each block connection in the function graph
         for k in tmp_graph[0]['blocks']:
             offset = k['offset']
             jmp = k.get('jump', None)
             fail = k.get('fail', None)
 
-            if jmp and jmp in mapping:
+            if jmp in mapping:
                 graph.add_edge(mapping[offset], mapping[jmp])
-            if fail and fail in mapping:
+            if fail in mapping:
                 graph.add_edge(mapping[offset], mapping[fail])
 
         return graph
     
     def is_equal(self, cmp_graph, rename=None, fn_address=0):
         '''
-        Check if a given graph is isomorph, rename if needed
+        Check if a given graph is isomorph and rename if asked to
         :cmp_grap Graph to compare
-        :rename new name, it will be append to 'similar_'
+        :rename new name, it will be formated as 'similar_{new_name}_{id}'
         :fn_address function address to rename
         '''
         if nx.is_isomorphic(self.base_graph, cmp_graph):
@@ -96,20 +123,6 @@ class R2_Graph:
             
             return True
 
-
-def is_inside():
-    '''
-    Check if is already inside the shell by checking the filename
-    '''
-    r2 = r2pipe.open()
-    try:
-        filename = r2.cmd('o.')
-        if 'malloc' in filename: # Open without file            
-            return INSIDE_NO_FILE
-
-        return r2
-    except:
-        return OUTSIDE # Not inside
 
 def main(args, r2_instance = None):
     '''
@@ -139,27 +152,37 @@ def main(args, r2_instance = None):
 
     # List all known functions
     fcnl = [x['offset'] for x in json.loads(r2.cmd('aflj')) if x['offset'] != func_address]
-    
+
+    similars = []
     for fcn in fcnl:
         g = r2_graph.create_graph(target_function=fcn)
         if r2_graph.is_equal(g, rename=new_name, fn_address=fcn):
-            print(f"Function {hex(fcn)} has the same function structure!")
+            similars.append(hex(fcn))
     
+    print(f"Found {len(similars)} functions with the same structure as {target_func}: ")
+    if similars:
+        for f in similars:
+            print(f"\t- {f}")
 
 
+def is_inside():
+    '''
+    Check if is already inside the shell by checking the filename
+    '''
+    if inside_rz or inside_r2:
+        return pipe.open()
+    
 if __name__ == '__main__':
     arg_l = 3
     help_msg = ""
-    display_help = False
     r2 = is_inside()
-    display_help = r2 == INSIDE_NO_FILE or r2 == OUTSIDE
 
-    if display_help:
-        help_msg = f"{sys.argv[0]} binary_path function_address"
+    if r2:
+        help_msg = f"#!pipe python {sys.argv[0]}.py address newname"
     else:
-        help_msg = "#!pipe python r2_similarfunc.py address newname"
+        help_msg = f"{sys.argv[0]} binary_path function_address"
 
-    if len(sys.argv) < arg_l or display_help:
+    if len(sys.argv) < arg_l:
         print(help_msg)
         sys.exit(1)
 

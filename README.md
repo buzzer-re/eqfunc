@@ -117,6 +117,8 @@ maybe_equal_fcns = eqfunc.find_equals('0x1167', r2, False) # set to True if you 
 
 
 
+# Conclusion
+
 
 That's it, I want to port that to IDA very soon so stay tuned in this repo for future updates, any problems or doubts feel free to open a issue! thanks.
 

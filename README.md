@@ -48,7 +48,7 @@ int dummy()
 }
 ```
 
-We know that ***func*** is different than ***func2*** but they share the same code structure, has a variable declaration block and a for loop block, using ***radare2*** we can easily peek inside their strucutures:
+We know that ***func*** is different than ***func2*** but they share the same code structure, has a variable declaration block and a for loop block, using ***radare2*** we can easily peek inside their structures:
 
 |![](assets/func1_graph.png)|![](assets/func2_graph.png)|
 |:--:|:--:|
@@ -62,6 +62,7 @@ Found 1 functions with the same structure as sym.func:
        - 0x1167
 </pre>
 
+When using as standalone it will show a list of functions address that it found.
 
 # Installing
 
@@ -73,7 +74,7 @@ You now are ready to go.
 
 ## Using
 
-To keep this simple enought, there is no fancy command line args 
+To keep this simple as possible, there is no fancy command line args.
 
 ### Standlone
 ./eqfunc.py binary_path function_adress
@@ -82,7 +83,7 @@ To keep this simple enought, there is no fancy command line args
 
 >#!pipe python eqfunc.py address newname
 
-Inside R2 or Rizin it will also rename the similars functions with the ***new*** argument and concat with ***_similar_count***, you can check by listing your functions:
+Inside R2 or Rizin it will also rename the similars functions with the ***newname*** argument and concat with ***_similar_count***, you can check by listing your functions:
 
 ```
 [0x00001135]> fs functions ;f ~similar
@@ -110,7 +111,7 @@ import eqfunc
 
 r2 = r2pipe.open('examples/binteste')
 maybe_equal_fcns = eqfunc.find_equals('0x1167', r2, False) # set to True if you are using rzpipe
-
+print(maybe_equals_fcns)
 # ['0x1135']
 ```
 

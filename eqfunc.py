@@ -182,13 +182,6 @@ def main(args, pipe_instance = None, return_only = False):
             print(f"\t- {f}")
 
 
-def is_inside():
-    '''
-    Check if is already inside the shell by checking the filename
-    '''
-    if inside_rz or inside_r2:
-        return pipe.open()
-
 def find_equals(addr, pipe_instance, is_rizin):
     '''
     Function to be used for scripting
@@ -206,7 +199,9 @@ def find_equals(addr, pipe_instance, is_rizin):
 if __name__ == '__main__':
     arg_l = 3
     help_msg = ""
-    r2 = is_inside()
+    r2 = None
+    if inside_rz or inside_r2:
+        r2 = pipe.open()
 
     if r2:
         help_msg = f"#!pipe python {sys.argv[0]}.py address newname"

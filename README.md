@@ -6,9 +6,9 @@ Find structural equivalent functions inside binaries using [Graphs isomorphism](
 
 This is a Radare2/Rizin/Cutter script to model a basic block function graph into a real graph, using [networkx](https://networkx.org/documentation/stable/reference/algorithms/isomorphism.html), and then search inside the binary others functions that has the same ***structure***, this means that even if the function has differente code but equal structure it will be found!
 
-### Why
+### Why ?
 
-Well, I created that to solve a real world problem when I was analyzing a obfuscated software that used one function per string inside in order to decrypt them, instead to seek all the functions I decided to pick one as example and search all structural equal functions, this helped me to decipher everything by emulating all the similar functions. I ended with a tiny and useful binary analysis tool that can help a lot of people to solve this kind of problem, that's why.
+Well, in my case I created that to solve a real world problem when I was analyzing a obfuscated software that used one function per string inside in order to decrypt them, instead to seek all the functions I decided to pick one as example and search all structural equal functions, this helped me to decipher everything by emulating all the similar functions. I ended with a tiny and useful binary analysis tool that can help a lot of people to solve this kind of problem, that's why.
 
 ### Isomorphism
 
@@ -73,14 +73,16 @@ You now are ready to go.
 
 ## Using
 
+To keep this simple enought, there is no fancy command line args 
+
 ### Standlone
-./eqfunc.py binary_path function_dress
+./eqfunc.py binary_path function_adress
 
 ### Inside radare2 or rizin
 
 >#!pipe python eqfunc.py address newname
 
-Inside R2 or Rizin it will also rename the similars functions with the ***rename*** argument and ***_similar_count***, you can check by listing your functions:
+Inside R2 or Rizin it will also rename the similars functions with the ***new*** argument and concat with ***_similar_count***, you can check by listing your functions:
 
 ```
 [0x00001135]> fs functions ;f ~similar

@@ -93,7 +93,10 @@ Inside R2 or Rizin it will also rename the similars functions with the ***new***
 
 As this also support rizin, you can easily call that from [cutter](https://cutter.re) by using the same command above and then going to ***View > Refresh Contents*** to apply the new functions name to Cutter UI:
 
-![](assets/cutter_funcs.png)
+|![](assets/cutter_funcs.png)|
+|:--:|
+|Cutter function list widget|
+
 
 
 ### Scripting

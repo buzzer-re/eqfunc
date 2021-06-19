@@ -27,11 +27,11 @@ elif calle in r2names:
     inside_r2 = True
 else:
     try:
-        import rzpipe as pipe
+        import r2pipe as pipe
         rizin = True
     except:
         try:
-            import r2pipe as pipe
+            import rzpipe as pipe
         except Exception as e:
             raise e
 #end choose import

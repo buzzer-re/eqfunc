@@ -1,22 +1,28 @@
 #!/usr/bin/python3
 import sys, json
+import platform
 import networkx as nx
 import psutil
 
-me = psutil.Process()
-parent = psutil.Process(me.ppid())
-calle = parent.cmdline()[0]
+# Chose the correct import, user can be runing that inside radare2,rizin or cutter
+calle = psutil.Process(psutil.Process().ppid()).cmdline()[0]
+
+if platform.system() == 'Windows':
+    calle = calle.split("\\")[-1]
 
 rizin = False
 
 inside_r2 = False
 inside_rz = False
+rznames = ['rizin', 'rizin.exe', 'cutter', 'cutter.exe']
+r2names = ['r2', 'radare2', 'radare2.exe', 'r2.exe']
+# Yep, that all the possible names to rizin, r2 and cutter
 
-if 'rizin' ==  calle or 'cutter' == calle:
+if calle in rznames:
     import rzpipe as pipe
     inside_rz = True
     rizin = True
-elif 'radare2' == calle or 'r2' == calle:
+elif calle in r2names:
     import r2pipe as pipe 
     inside_r2 = True
 else:
@@ -28,6 +34,7 @@ else:
             import r2pipe as pipe
         except Exception as e:
             raise e
+#end choose import
 
 class R2_Graph:
     '''
@@ -119,7 +126,7 @@ class R2_Graph:
             if rename and fn_address != 0:
                 self.matchs += 1
                 new_name = f'similar_{rename}_{self.matchs}'
-                self.r2.cmd(f'afn {new_name} @ {fn_address}; s-')
+                self.r2.cmd(f'afn {new_name} @ {fn_address}')
             
             return True
 
@@ -159,6 +166,8 @@ def main(args, r2_instance = None):
         if r2_graph.is_equal(g, rename=new_name, fn_address=fcn):
             similars.append(hex(fcn))
     
+    r2.cmd(f's {func_address}')
+
     print(f"Found {len(similars)} functions with the same structure as {target_func}: ")
     if similars:
         for f in similars:

@@ -77,7 +77,7 @@ You now are ready to go.
 To keep this simple as possible, there is no fancy command line args.
 
 ### Standlone
-./eqfunc.py binary_path function_adress
+> ./eqfunc.py binary_path function_adress
 
 ### Inside radare2 or rizin
 

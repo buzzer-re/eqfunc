@@ -1,2 +1,0 @@
-networkx==2.5.1
-r2pipe==1.5.3

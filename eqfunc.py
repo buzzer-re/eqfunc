@@ -1,22 +1,28 @@
 #!/usr/bin/python3
 import sys, json
+import platform
 import networkx as nx
 import psutil
 
-me = psutil.Process()
-parent = psutil.Process(me.ppid())
-calle = parent.cmdline()[0]
+# Chose the correct import, user can be runing that inside radare2,rizin or cutter
+calle = psutil.Process(psutil.Process().ppid()).cmdline()[0]
+
+if platform.system() == 'Windows':
+    calle = calle.split("\\")[-1]
 
 rizin = False
 
 inside_r2 = False
 inside_rz = False
+rznames = ['rizin', 'rizin.exe', 'cutter', 'cutter.exe']
+r2names = ['r2', 'radare2', 'radare2.exe', 'r2.exe']
+# Yep, that all the possible names to rizin, r2 and cutter
 
-if 'rizin' ==  calle or 'cutter' == calle:
+if calle in rznames:
     import rzpipe as pipe
     inside_rz = True
     rizin = True
-elif 'radare2' == calle or 'r2' == calle:
+elif calle in r2names:
     import r2pipe as pipe 
     inside_r2 = True
 else:
@@ -28,6 +34,7 @@ else:
             import r2pipe as pipe
         except Exception as e:
             raise e
+#end choose import
 
 class R2_Graph:
     '''
@@ -66,6 +73,7 @@ class R2_Graph:
         '''
         self.r2.cmd('aaa')        
         self.base_graph = self.create_graph(self.target_function, True)
+        return self.base_graph
 
     def create_graph(self, target_function, is_base=False):
         '''
@@ -87,6 +95,8 @@ class R2_Graph:
             print(msg)
             return
 
+        if not tmp_graph and is_base:
+            return None
 
         # Map all address to numbers between 0-nuBlocks
         # because the node number can't be unique 
@@ -119,33 +129,35 @@ class R2_Graph:
             if rename and fn_address != 0:
                 self.matchs += 1
                 new_name = f'similar_{rename}_{self.matchs}'
-                self.r2.cmd(f'afn {new_name} @ {fn_address}; s-')
+                self.r2.cmd(f'afn {new_name} @ {fn_address}')
             
             return True
 
 
-def main(args, r2_instance = None):
+def main(args, pipe_instance = None, return_only = False):
     '''
     Create and check function isomorphism using function graph
 
     :args with the name of the target and function address
-    :r2_instance if already inside r2/rizin
+    :pipe_instance if already inside r2/rizin
     '''
     bin_path = None
     target_func = None
     new_name = None
     r2 = None
     
-    if r2_instance:
+    if pipe_instance:
         target_func, new_name = args
-        r2 = r2_instance
+        r2 = pipe_instance
     else:
         bin_path, target_func = args
     
-    r2_graph = R2_Graph(bin_path, target_func, r2_instance)
-    r2_graph.analyze()
+    r2_graph = R2_Graph(bin_path, target_func, pipe_instance)
+    if not r2_graph.analyze():
+        print("Invalid binary or function address")
+        sys.exit(1)
 
-    if r2_instance is None:
+    if pipe_instance is None:
         r2 = r2_graph.get_r2()
 
     func_address = int(r2.cmd(f's {target_func};s'), base=16)
@@ -159,6 +171,11 @@ def main(args, r2_instance = None):
         if r2_graph.is_equal(g, rename=new_name, fn_address=fcn):
             similars.append(hex(fcn))
     
+    r2.cmd(f's {func_address}')
+    
+    if return_only:
+        return similars
+
     print(f"Found {len(similars)} functions with the same structure as {target_func}: ")
     if similars:
         for f in similars:
@@ -171,7 +188,21 @@ def is_inside():
     '''
     if inside_rz or inside_r2:
         return pipe.open()
-    
+
+def find_equals(addr, pipe_instance, is_rizin):
+    '''
+    Function to be used for scripting
+    :addr to find similars
+    :pipe_instance r2pipe or rzpipe isntance
+    :is_rizin boolean to indicate if is using rizin
+    '''
+    rizin = is_rizin
+    inside_rz = is_rizin
+    args = (addr, None)
+    return main(args, pipe_instance, return_only=True)
+
+
+
 if __name__ == '__main__':
     arg_l = 3
     help_msg = ""

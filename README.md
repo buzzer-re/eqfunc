@@ -6,9 +6,9 @@ Find structural equivalent functions inside binaries using [Graphs isomorphism](
 
 This is a Radare2/Rizin/Cutter script to model a basic block function graph into a real graph, using [networkx](https://networkx.org/documentation/stable/reference/algorithms/isomorphism.html), and then search inside the binary others functions that has the same ***structure***, this means that even if the function has differente code but equal structure it will be found!
 
-### Why
+### Why ?
 
-Well, I created that to solve a real world problem when I was analyzing a obfuscated software that used one function per string inside in order to decrypt them, instead to seek all the functions I decided to pick one as example and search all structural equal functions, this helped me to decipher everything by emulating all the similar functions. I ended with a tiny and useful binary analysis tool that can help a lot of people to solve this kind of problem, that's why.
+Well, in my case I created that to solve a real world problem when I was analyzing a obfuscated software that used one function per string inside in order to decrypt them, instead to seek all the functions I decided to pick one as example and search all structural equal functions, this helped me to decipher everything by emulating all the similar functions. I ended with a tiny and useful binary analysis tool that can help a lot of people to solve this kind of problem, that's why.
 
 ### Isomorphism
 
@@ -48,7 +48,7 @@ int dummy()
 }
 ```
 
-We know that ***func*** is different than ***func2*** but they share the same code structure, has a variable declaration block and a for loop block, using ***radare2*** we can easily peek inside their strucutures:
+We know that ***func*** is different than ***func2*** but they share the same code structure, has a variable declaration block and a for loop block, using ***radare2*** we can easily peek inside their structures:
 
 |![](assets/func1_graph.png)|![](assets/func2_graph.png)|
 |:--:|:--:|
@@ -62,6 +62,7 @@ Found 1 functions with the same structure as sym.func:
        - 0x1167
 </pre>
 
+When using as standalone it will show a list of functions address that it found.
 
 # Installing
 
@@ -73,14 +74,16 @@ You now are ready to go.
 
 ## Using
 
+To keep this simple as possible, there is no fancy command line args.
+
 ### Standlone
-./eqfunc.py binary_path function_dress
+> ./eqfunc.py binary_path function_adress
 
 ### Inside radare2 or rizin
 
 >#!pipe python eqfunc.py address newname
 
-Inside R2 or Rizin it will also rename the similars functions with the ***rename*** argument and ***_similar_count***, you can check by listing your functions:
+Inside R2 or Rizin it will also rename the similars functions with the ***newname*** argument and concat with ***_similar_count***, you can check by listing your functions:
 
 ```
 [0x00001135]> fs functions ;f ~similar
@@ -91,7 +94,10 @@ Inside R2 or Rizin it will also rename the similars functions with the ***rename
 
 As this also support rizin, you can easily call that from [cutter](https://cutter.re) by using the same command above and then going to ***View > Refresh Contents*** to apply the new functions name to Cutter UI:
 
-![](assets/cutter_funcs.png)
+|![](assets/cutter_funcs.png)|
+|:--:|
+|Cutter function list widget|
+
 
 
 ### Scripting
@@ -105,12 +111,14 @@ import eqfunc
 
 r2 = r2pipe.open('examples/binteste')
 maybe_equal_fcns = eqfunc.find_equals('0x1167', r2, False) # set to True if you are using rzpipe
-
+print(maybe_equals_fcns)
 # ['0x1135']
 ```
 
 
 
+
+# Conclusion
 
 
 That's it, I want to port that to IDA very soon so stay tuned in this repo for future updates, any problems or doubts feel free to open a issue! thanks.

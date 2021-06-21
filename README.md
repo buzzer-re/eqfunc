@@ -1,10 +1,10 @@
 # eqfunc
 
-Find structural equivalent functions inside binaries using [Graphs isomorphism](https://en.wikipedia.org/wiki/Graph_isomorphism).
+Find structural equivalent functions inside binaries using [Graph isomorphism](https://en.wikipedia.org/wiki/Graph_isomorphism).
 
 ## Wait, what ?
 
-This is a Radare2/Rizin/Cutter script to model a basic block function graph into a real graph, using [networkx](https://networkx.org/documentation/stable/reference/algorithms/isomorphism.html), and then search inside the binary others functions that has the same ***structure***, this means that even if the function has differente code but equal structure it will be found!
+This is a Radare2/Rizin/Cutter script to model a basic block function graph into a real graph, using [networkx](https://networkx.org), and then search inside the binary others functions that has the same ***structure***, this means that even if the function has different code but equal structure it will be found!
 
 ### Why ?
 

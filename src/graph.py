@@ -1,6 +1,7 @@
 import networkx as nx
 import platform
 import psutil
+import os
 
 # Chose the correct import, user can be runing that inside radare2,rizin or cutter
 calle = psutil.Process(psutil.Process().ppid()).cmdline()[0]
@@ -60,20 +61,24 @@ class Graph:
         self.base_graph = None
         self.matchs = 0
 
-    def get_r2(self):
+    def get_pipe(self):
         '''
-        Get R2 instance
+        Get R2/pipe instance
 
         '''
         return self.r2
 
-    def analyze(self):
+    def get_name(self):
+        return os.path.basename(self.path)
+
+    def analyze(self, gen_graph=True) -> None:
         '''
         Analyze everything, and auto rename, then create a graph to the target function
         '''
         self.r2.cmd('aaa')        
-        self.base_graph = self.create_graph(self.target_function, True)
-        return self.base_graph
+        if gen_graph:
+            self.base_graph = self.create_graph(self.target_function, True)
+            
 
     def create_graph(self, target_function, is_base=False):
         '''

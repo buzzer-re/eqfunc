@@ -1,56 +1,47 @@
 #!/usr/bin/python3
+import argparse
 import sys
+from networkx.classes import graph
+import yaml
 
 import graph
 
 
-def main(args, pipe_instance = None, return_only = False):
-    '''
-    Create and check function isomorphism using function graph
-
-    :args with the name of the target and function address
-    :pipe_instance if already inside r2/rizin
-    '''
-    bin_path = None
-    target_func = None
-    new_name = None
-    r2 = None
-    
-    if pipe_instance:
-        target_func, new_name = args
-        r2 = pipe_instance
-    else:
-        bin_path, target_func = args
-    
-    r2_graph = graph.Graph(bin_path, target_func, pipe_instance)
-    if not r2_graph.analyze():
-        print("Invalid binary or function address")
-        sys.exit(1)
-
-    if pipe_instance is None:
-        r2 = r2_graph.get_r2()
-
-    func_address = int(r2.cmd(f's {target_func};s'), base=16)
-
-    # List all known functions
-    fcnl = [x['offset'] for x in r2.cmdj('aflj') if x['offset'] != func_address]
+def internal_similars(bin_graph: graph.Graph, base_addres) -> list:
+    # Internal functions list
+    pipe = bin_graph.get_pipe()
+    fcnl = [x['offset'] for x in pipe.cmdj('aflj') if x['offset'] != base_addres]
 
     similars = []
     for fcn in fcnl:
-        g = r2_graph.create_graph(target_function=fcn)
-        if r2_graph.is_equal(g, rename=new_name, fn_address=fcn):
+        g = bin_graph.create_graph(target_function=fcn)
+        if bin_graph.is_equal(g, rename='', fn_address=fcn):
             similars.append(hex(fcn))
     
-    r2.cmd(f's {func_address}')
+    return similars
     
-    if return_only:
-        return similars
 
-    
-    print(f"Found {len(similars)} functions with the same structure as {target_func}: ")
-    if similars:
-        for f in similars:
-            print(f"\t- {f}")
+def external_similars(bin_graph: graph.Graph, compare_graph: graph.Graph) -> dict:
+    exPipe = compare_graph.get_pipe()
+    primary_file = bin_graph.get_name()
+    compare_name = compare_graph.get_name()
+    fcnl = [x['offset'] for x in exPipe.cmdj('aflj') if x['offset']]
+
+    similars = {
+        "len": 0,
+        primary_file: {
+            compare_name: []
+        }
+    }
+
+    for fcn in fcnl:
+        # Get networkx graph object
+        g = compare_graph.create_graph(target_function=fcn)
+        if bin_graph.is_equal(g, rename='', fn_address=fcn):
+            similars[primary_file][compare_name].append(hex(fcn))
+            similars["len"] += 1
+
+    return similars
 
 
 def find_equals(addr, pipe_instance, is_rizin):
@@ -60,27 +51,51 @@ def find_equals(addr, pipe_instance, is_rizin):
     :pipe_instance r2pipe or rzpipe isntance
     :is_rizin boolean to indicate if is using rizin
     '''
-    rizin = is_rizin
-    inside_rz = is_rizin
+    # rizin = is_rizin
+    # inside_rz = is_rizin
     args = (addr, None)
-    return main(args, pipe_instance, return_only=True)
+    graph.inside_rz = is_rizin
+    graph.rizin = is_rizin
+    # return main(called_by_script=True, (args, pipe_instance, return_only=True))
+
+
+def main(called_by_script=False):
+    args = argparse.ArgumentParser(description="Discover strucutered equal function")
+    args.add_argument("binary", help="Binary to be analyzed and used as base")
+    args.add_argument("function", help="Function to be used as base")
+    args.add_argument("--path", help="Path to cluster similar functions", default=None)
+    args.add_argument("--compare", help="An unique file to compare")
+    args = args.parse_args()
+
+    binary = args.binary
+    function = args.function
+    cluster_path = args.path
+    compare = args.compare
+
+    binGraph = graph.Graph(binary, function)
+    binGraph.analyze()
+
+    if args.compare: # Compare two binaries
+        compareGraph = graph.Graph(compare, None)
+        compareGraph.analyze()
+        similars = external_similars(binGraph, compareGraph)
+        
+        if similars["len"] > 0:
+            print(yaml.dump(similars))
+        else:
+            print("No similar function between the binaries")
+
+    elif not cluster_path:
+        similars = internal_similars(binGraph, function)
+        if similars:
+            print("Similars: ")
+            print(yaml.dump(similars))
+        else:
+            print(f"No similar functions to {function}")
+    
+        
 
 
 
 if __name__ == '__main__':
-    arg_l = 3
-    help_msg = ""
-    pipe = None
-    if graph.inside_rz or graph.inside_r2:
-        pipe = graph.pipe.open()
-
-    if pipe:
-        help_msg = f"#!pipe python {sys.argv[0]}.py address newname"
-    else:
-        help_msg = f"{sys.argv[0]} binary_path function_address"
-
-    if len(sys.argv) < arg_l:
-        print(help_msg)
-        sys.exit(1)
-
-    main([sys.argv[1], sys.argv[2]], pipe)
+    main()

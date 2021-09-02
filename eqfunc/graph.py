@@ -71,14 +71,16 @@ class Graph:
     def get_name(self):
         return os.path.basename(self.path)
 
-    def analyze(self, gen_graph=True) -> None:
+    def analyze(self, gen_graph=True) -> bool:
         '''
         Analyze everything, and auto rename, then create a graph to the target function
         '''
-        self.r2.cmd('aaa')        
+        self.r2.cmd('aaa')  
         if gen_graph:
             self.base_graph = self.create_graph(self.target_function, True)
-            
+            if not self.base_graph:
+                return False
+        return True
 
     def create_graph(self, target_function, is_base=False):
         '''
@@ -97,13 +99,12 @@ class Graph:
             msg = f"Unable to generate a data block graph from {target_function}"
             if is_base:
                 raise Exception(msg)
-            print(msg)
             return
 
         if not tmp_graph and is_base:
             return None
 
-        # Map all address to numbers between 0-nuBlocks
+        # Map all address to numbers between 0-numBlocks
         # because the node number can't be unique 
         for i, k in enumerate(tmp_graph[0]['blocks']):
             offset  = k['offset']
@@ -130,6 +131,7 @@ class Graph:
         :rename new name, it will be formated as 'similar_{new_name}_{id}'
         :fn_address function address to rename
         '''
+
         if nx.is_isomorphic(self.base_graph, cmp_graph):
             if rename and fn_address != 0:
                 self.matchs += 1

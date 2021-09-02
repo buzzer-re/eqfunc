@@ -1,10 +1,11 @@
 #!/usr/bin/python3
 import argparse
-import sys
+import os, sys
+from subprocess import call
 from networkx.classes import graph
 import yaml
 
-import graph
+# Graph import in if __name__ block
 
 
 def internal_similars(bin_graph: graph.Graph, base_addres) -> list:
@@ -15,6 +16,9 @@ def internal_similars(bin_graph: graph.Graph, base_addres) -> list:
     similars = []
     for fcn in fcnl:
         g = bin_graph.create_graph(target_function=fcn)
+        if not g:
+            continue
+
         if bin_graph.is_equal(g, rename='', fn_address=fcn):
             similars.append(hex(fcn))
     
@@ -44,58 +48,65 @@ def external_similars(bin_graph: graph.Graph, compare_graph: graph.Graph) -> dic
     return similars
 
 
-def find_equals(addr, pipe_instance, is_rizin):
-    '''
-    Function to be used for scripting
-    :addr to find similars
-    :pipe_instance r2pipe or rzpipe isntance
-    :is_rizin boolean to indicate if is using rizin
-    '''
-    # rizin = is_rizin
-    # inside_rz = is_rizin
-    args = (addr, None)
-    graph.inside_rz = is_rizin
-    graph.rizin = is_rizin
-    # return main(called_by_script=True, (args, pipe_instance, return_only=True))
+
+def main(called_by_script=False, script_args=()):
+    pipe_instance = None
+    if not called_by_script:
+        args = argparse.ArgumentParser(description="Discover structural equal function")
+        args.add_argument("binary", help="Binary to be analyzed and used as base")
+        args.add_argument("function", help="Function to be used as base")
+        args.add_argument("--compare", help="An unique file to compare")
+        args = args.parse_args()
+
+        binary = args.binary
+        function = args.function
+        compare = args.compare
+        if not os.path.exists(binary):
+            print(f"Invalid base file {binary}")
+            sys.exit(1)
+    else:
+        function, pipe_instance = script_args 
+        compare = None
 
 
-def main(called_by_script=False):
-    args = argparse.ArgumentParser(description="Discover strucutered equal function")
-    args.add_argument("binary", help="Binary to be analyzed and used as base")
-    args.add_argument("function", help="Function to be used as base")
-    args.add_argument("--path", help="Path to cluster similar functions", default=None)
-    args.add_argument("--compare", help="An unique file to compare")
-    args = args.parse_args()
+    if pipe_instance:
+        binGraph = graph.Graph(None, function, pipe_instance)
+    else:
+        binGraph = graph.Graph(binary, function)
 
-    binary = args.binary
-    function = args.function
-    cluster_path = args.path
-    compare = args.compare
+    if not binGraph.analyze(gen_graph=True):
+        return None
+    
+    if compare: # Compare two binaries
+        if not os.path.exists(compare):
+            print(f"Invalid file {compare}")
+            sys.exit(1)
 
-    binGraph = graph.Graph(binary, function)
-    binGraph.analyze()
-
-    if args.compare: # Compare two binaries
         compareGraph = graph.Graph(compare, None)
         compareGraph.analyze()
         similars = external_similars(binGraph, compareGraph)
-        
+
+
         if similars["len"] > 0:
             print(yaml.dump(similars))
         else:
             print("No similar function between the binaries")
 
-    elif not cluster_path:
+    else: # Internal discovery
         similars = internal_similars(binGraph, function)
+        
+        if called_by_script:
+            return similars
+
         if similars:
             print("Similars: ")
             print(yaml.dump(similars))
         else:
             print(f"No similar functions to {function}")
-    
-        
-
-
 
 if __name__ == '__main__':
+    import graph
     main()
+else:
+    # Import as module, used for scripting 
+    from . import graph

@@ -68,7 +68,7 @@ When using as standalone it will show a list of functions address that it found.
 
 This script was built on top of [r2pipe](https://github.com/radareorg/radare2-r2pipe), a radare2 script interface, so in order to run this as a standalone tool you will need to install [radare2](https://github.com/radareorg/radare2) or [rizin](https://github.com/rizinorg/rizin), then install the python dependencies:
 
-> pip install requirements.txt --user
+> pip install -r requirements.txt --user
 
 You now are ready to go.
 
